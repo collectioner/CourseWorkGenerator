@@ -1,6 +1,6 @@
 ﻿namespace CourseWorkGenerator.Configuration
 {
-    public class DataConfiguration
+    public class EntityConfiguration
     {
         public string DataHeader { get; set; }
         public string ValueCell { get; set; }

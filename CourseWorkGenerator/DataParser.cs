@@ -1,11 +1,12 @@
 ﻿using CourseWorkGenerator.Configuration;
+using CourseWorkGenerator.Models;
 using OfficeOpenXml;
 
 namespace CourseWorkGenerator
 {
     public static class DataParser
     {
-        public static IReadOnlyList<IReadOnlyList<IReadOnlyList<string>>> Parse(AppConfiguration configuration)
+        public static IReadOnlyList<TableData> Parse(AppConfiguration configuration)
         {
             using var package = new ExcelPackage(new FileInfo(configuration.SourceFileName));
             ExcelWorksheet firstWorksheet = package.Workbook.Worksheets[0];
@@ -15,39 +16,57 @@ namespace CourseWorkGenerator
                 .ToList();
         }
 
-        private static IReadOnlyList<IReadOnlyList<string>> ParseTable(ExcelWorksheet worksheet, TableConfiguration tableConfiguration)
+        private static TableData ParseTable(ExcelWorksheet worksheet, TableConfiguration tableConfiguration)
         {
-            List<string> header = tableConfiguration.Cells
+            List<string> header = tableConfiguration.Entities
                 .Select(c => string.Format(tableConfiguration.HeaderFormat, c.DataHeader))
                 .ToList();
 
-            header.Insert(0, "#");
-
-            var tableData = new List<List<string>> { header };
-
-            for (int i = 0; i < tableConfiguration.NumberOfExperiments; i++)
+            return new TableData
             {
-                var data = new List<string> { (i + 1).ToString() };
+                ErrorValueTextFormat = tableConfiguration.ErrorValueTextFormat,
+                HeaderCells = header,
+                Entities = tableConfiguration.Entities
+                    .Select(e => ParseEntity(worksheet, e, tableConfiguration.NumberOfExperiments))
+                    .ToList()
+            };
+        }
 
-                foreach (DataConfiguration cell in tableConfiguration.Cells)
+        private static EntityData ParseEntity(
+            ExcelWorksheet worksheet, 
+            EntityConfiguration entityConfiguration, 
+            int experimentsCount)
+        {
+            var data = new List<EntityValue>();
+
+            for (int i = 0; i < experimentsCount; i++)
+            {
+                var entityValue = new EntityValue
                 {
-                    object value = worksheet.Cells[$"{cell.ValueCell}{cell.StartRowNumber + i}"].Value;
-                    if (value is null)
-                    {
-                        data.Add(string.Empty);
-                    }
-                    else
-                    {
-                        object error = worksheet.Cells[$"{cell.ErrorCell}{cell.StartRowNumber + i}"].Value;
+                    ExperimentNumber = i + 1
+                };
 
-                        data.Add($"{value} ± {error}".Replace(".", ","));
-                    }
+                object value = worksheet.Cells[$"{entityConfiguration.ValueCell}{entityConfiguration.StartRowNumber + i}"].Value;
+                if (value is null)
+                {
+                    data.Add(entityValue);
                 }
+                else
+                {
+                    object error = worksheet.Cells[$"{entityConfiguration.ErrorCell}{entityConfiguration.StartRowNumber + i}"].Value;
 
-                tableData.Add(data);
+                    entityValue.Value = value.ToString(); // ToString() returns string?, but we assume that string exists
+                    entityValue.Error = error.ToString();
+
+                    data.Add(entityValue);
+                }
             }
 
-            return tableData;
+            return new EntityData
+            {
+                Title = entityConfiguration.DataHeader,
+                Values = data
+            };
         }
     }
 }

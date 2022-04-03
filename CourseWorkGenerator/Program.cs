@@ -1,5 +1,6 @@
 ﻿using CourseWorkGenerator;
 using CourseWorkGenerator.Configuration;
+using CourseWorkGenerator.Models;
 using Newtonsoft.Json;
 using OfficeOpenXml;
 
@@ -12,8 +13,8 @@ if (configuration is null)
     throw new Exception("App configuration is null.");
 }
 
-IReadOnlyList<IReadOnlyList<IReadOnlyList<string>>> tablesData = DataParser.Parse(configuration);
+IReadOnlyList<TableData> tablesData = DataParser.Parse(configuration);
 
-TableGenerator.Generate(tablesData);
+DocumentGenerator.Generate(tablesData);
 
-Console.WriteLine("Data processed.");
+Console.WriteLine("EntityData processed.");

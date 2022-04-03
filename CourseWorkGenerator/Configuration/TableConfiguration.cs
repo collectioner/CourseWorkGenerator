@@ -4,6 +4,7 @@
     {
         public int NumberOfExperiments { get; set; }
         public string HeaderFormat { get; set; }
-        public IReadOnlyList<DataConfiguration> Cells { get; set; }
+        public string ErrorValueTextFormat { get; set; }
+        public IReadOnlyList<EntityConfiguration> Entities { get; set; }
     }
 }
